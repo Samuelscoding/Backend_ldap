@@ -78,7 +78,13 @@ function authenticate(email, password) {
     });
 }
 
+function fixName(name) {
+    // workaround to fix a problem with LDAPJS
+    return decodeURI(name.replaceAll("\\", "%"));
+}
+
 const port = 3001;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+

@@ -35,7 +35,7 @@ function authenticate(email, password) {
                 scope: 'sub'
             };
 
-            server.search(process.env_LDAP_SEARCH_BASE, searchOptions, (searchErr, searchRes) => {
+            server.search(process.env.LDAP_SEARCH_BASE, searchOptions, (searchErr, searchRes) => {
                 if(searchErr) {
                     console.error('LDAP search error:', searchErr);
                     resolve(false);

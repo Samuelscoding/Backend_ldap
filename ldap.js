@@ -29,7 +29,7 @@ function authenticate(email, password) {
                 resolve(false);
             }
 
-            const filterStr = `(&(objectClass=user)(mail=${email}))`;
+            const filterStr = `(&(objectClass=user)(userPrincipalName=${email}))`;
             const searchOptions = {
                 filter: filterStr,
                 scope: 'sub'

@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const ldap = require('ldapjs');
 require('dotenv').config();
+const {verifyToken, createToken} = require("./verifyToken.js");
+
 const app = express();
 
 app.use(bodyParser.json());
@@ -13,69 +15,88 @@ app.post('/api/authenticate', async (req, res) => {
 
     try {
         const isAuthenticated = await authenticate(email, password);
-        res.json({ isAuthenticated });
+        if (isAuthenticated) {
+            const token = createToken(email);
+            res.json({ isAuthenticated, token });
+        } else {
+            res.json({ isAuthenticated });
+        }
     } catch(error) {
         console.error('Error in authentication:', error);
         res.status(500).json({ error: 'internal server error' });
     }
 });
 
+app.get('/api/token', verifyToken, async (req, res) => {
+    res.json({ token: req.headers['authorization'] });
+});
+
 function authenticate(email, password) {
-    return new Promise((resolve, reject) => {
+    try{
         const server = ldap.createClient({ url: process.env.LDAP_URL, reconnect: false });
-        server.bind(process.env.LDAP_USER_DN, process.env.LDAP_PASSWORD, (err) => {
-            if(err) {
-                console.error('LDAP bind error:', err);
-                resolve(false);
+        server.on('error', (error) => {
+            if(config.dev) {
+                 console.warn(new Date(), "Error in authenticate:", error);
             }
-
-            const filterStr = `(&(objectClass=user)(|(userPrincipalName=${email})(email=${email}))`;
-            const searchOptions = {
-                filter: filterStr,
-                scope: 'sub'
-            };
-
-            server.search(process.env.LDAP_SEARCH_BASE, searchOptions, (searchErr, searchRes) => {
-                if(searchErr) {
-                    console.error('LDAP search error:', searchErr);
+        });
+        return new Promise((resolve, reject) => {
+            server.bind(process.env.LDAP_USER_DN, process.env.LDAP_PASSWORD, (err) => {
+                if(err) {
+                    console.error('LDAP bind error:', err);
                     resolve(false);
                 }
-
-                let foundEntry = false;
-                searchRes.on('searchEntry', (entry) => {
-                    foundEntry = true;
-                    const dn = entry.dn;
-                    const userServer = ldap.createClient({ url: process.env.LDAP_URL});
-                    const dnString = fixName(dn.toString());
-
-                    userServer.bind(dnString, password, (bindErr) => {
-                        try {
-                            if(bindErr) {
-                                console.log('LDAP bind error:', bindErr);
+                
+                const filterStr = `(&(objectClass=user)(|(userPrincipalName=${email})(email=${email}))`;
+                const searchOptions = {
+                    filter: filterStr,
+                    scope: 'sub'
+                };
+    
+                server.search(process.env.LDAP_SEARCH_BASE, searchOptions, (searchErr, searchRes) => {
+                    if(searchErr) {
+                        console.error('LDAP search error:', searchErr);
+                        resolve(false);
+                    }
+    
+                    let foundEntry = false;
+                    searchRes.on('searchEntry', (entry) => {
+                        foundEntry = true;
+                        const dn = entry.dn;
+                        const userServer = ldap.createClient({ url: process.env.LDAP_URL});
+                        const dnString = fixName(dn.toString());
+    
+                        userServer.bind(dnString, password, (bindErr) => {
+                            try {
+                                if(bindErr) {
+                                    console.log('LDAP bind error:', bindErr);
+                                    resolve(false);
+                                    return;
+                                }
+    
+                                console.log('User authenticated');
+                                resolve(true);
+                            } catch(error) {
+                                console.error('Error in authentication:', error);
                                 resolve(false);
-                                return;
+                            } finally {
+                                userServer.destroy();
                             }
-
-                            console.log('User authenticated');
-                            resolve(true);
-                        } catch(error) {
-                            console.error('Error in authentication:', error);
+                        });
+                    });
+    
+                    searchRes.on('end', () => {
+                        if(!foundEntry) {
+                            console.log('User not found');
                             resolve(false);
-                        } finally {
-                            userServer.destroy();
                         }
                     });
                 });
-
-                searchRes.on('end', () => {
-                    if(!foundEntry) {
-                        console.log('User not found');
-                        resolve(false);
-                    }
-                });
             });
         });
-    });
+    } catch (error) {
+        console.error(error);
+        return false;
+    } 
 }
 
 function fixName(name) {

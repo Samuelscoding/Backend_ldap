@@ -35,9 +35,7 @@ function authenticate(email, password) {
     try{
         const server = ldap.createClient({ url: process.env.LDAP_URL, reconnect: false });
         server.on('error', (error) => {
-            if(config.dev) {
-                 console.warn(new Date(), "Error in authenticate:", error);
-            }
+            console.warn(new Date(), "Error in authenticate:", error);
         });
         return new Promise((resolve, reject) => {
             server.bind(process.env.LDAP_USER_DN, process.env.LDAP_PASSWORD, (err) => {
@@ -108,4 +106,3 @@ const port = 3001;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
-

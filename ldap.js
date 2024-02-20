@@ -5,6 +5,8 @@ const ldap = require('ldapjs');
 require('dotenv').config();
 const {verifyToken, createToken} = require("./verifyToken.js");
 
+const adminEmails = ['s.savastas@asc.de'];
+
 const app = express();
 
 app.use(bodyParser.json());
@@ -17,7 +19,8 @@ app.post('/api/authenticate', async (req, res) => {
         const isAuthenticated = await authenticate(email, password);
         if (isAuthenticated) {
             const token = createToken(email);
-            res.json({ isAuthenticated, token });
+            const isAdmin = adminEmails.includes(email);
+            res.json({ isAuthenticated, token, isAdmin });
         } else {
             res.json({ isAuthenticated });
         }

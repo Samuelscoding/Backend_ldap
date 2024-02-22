@@ -5,7 +5,7 @@ const ldap = require('ldapjs');
 require('dotenv').config();
 const {verifyToken, createToken} = require("./verifyToken.js");
 
-const adminEmails = ['s.savastas@asc.de'];
+const adminEmails = ['s.savasta@asc.de', 'm.komm@asc.de', 'r.roesel@asc.de', 'p.schmitt@asc.de', 'j.fountain@asc.de'];
 
 const app = express();
 
@@ -37,7 +37,7 @@ app.get('/api/token', verifyToken, async (req, res) => {
 app.get('/api/checkadminstatus', verifyToken, (req, res) => {
     const email = req.decoded.username;
     const isAdmin = adminEmails.includes(email);
-    res.json({ isAdmin });
+res.json({ isAdmin });
 });
 
 function authenticate(email, password) {

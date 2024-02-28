@@ -2,8 +2,9 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const secretKey = process.env.SECRET_KEY; 
 
-function createToken(username) {
-    return jwt.sign({ username }, secretKey, { expiresIn: '8h' });
+function createToken(username, isAdmin) {
+    console.log(isAdmin);
+    return jwt.sign({ username, isAdmin }, secretKey, { expiresIn: '8h' });
 }
 
 const verifyToken = (req, res, next) => {

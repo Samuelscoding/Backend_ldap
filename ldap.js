@@ -12,7 +12,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-app.post('/api/authenticate', async (req, res) => {
+app.post('/ldap/authenticate', async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -32,11 +32,11 @@ app.post('/api/authenticate', async (req, res) => {
     }
 });
 
-app.get('/api/token', verifyToken, async (req, res) => {
+app.get('/ldap/token', verifyToken, async (req, res) => {
     res.json({ token: req.headers['authorization'] });
 });
 
-app.get('/api/checkadminstatus', verifyToken, (req, res) => {
+app.get('/ldap/checkadminstatus', verifyToken, (req, res) => {
     const email = req.decoded.username;
     const isAdmin = adminEmails.includes(email);
 res.json({ isAdmin });
@@ -44,6 +44,7 @@ res.json({ isAdmin });
 
 function authenticate(email, password) {
     try{
+        console.log("Versuch");
         const server = ldap.createClient({ url: process.env.LDAP_URL, reconnect: false });
         server.on('error', (error) => {
             console.warn(new Date(), "Error in authenticate:", error);
